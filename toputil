@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+TOP_RES="/tmp/topresult"
+PID_PNAME="/tmp/res"
+PMAP_RES="/tmp/pmapresult"
+
+top -n1 b -o %MEM | head -30 | sed '1,6d' >${TOP_RES}
+
+top -n1 b -o %MEM | head -30 | sed '1,6d' | awk '{print $1"\t"$12}' >${PID_PNAME}
+
+pids=$(cat ${PID_PNAME} | awk '{print $1}' | sed 1d)
+
+for pid in $pids; do
+    pmap_res=$(pmap ${pid} | tail -1)
+    echo "$pid, ${pmap_res}" >>${PMAP_RES}
+done

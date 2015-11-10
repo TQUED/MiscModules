@@ -1,0 +1,94 @@
+#!/usr/bin/python
+import sys
+
+
+def generateFlowPathList(offset, length, filename):
+    flowPathData = []
+    f = open(filename)
+    f.seek(int(offset))
+    data = f.read(int(length))
+    f.close()
+    flowPathData = data.split('_')
+
+    return flowPathData
+
+
+metadataMap = {}
+with open('NDMetaData.csv') as f:
+    for line in f:
+        id, _type, value = line.strip().split(',')
+        if _type == '0':
+            if value.startswith('Unknown'):
+                continue
+            metadataMap[id] = value 
+        else:
+            continue 
+    f.close()
+
+
+rawDataMap = {}
+with open('AppTier_fedora96_atg.txt') as f:
+    for line in f:
+        if line[:2] == '5,':
+            eventId, name, id = line.strip().split(',')
+            rawDataMap[name] = id
+        else:
+            continue
+    f.close()
+
+
+def processMethodEntry(txt):
+    #replace methodID
+    #print txt
+    mid = txt[0] 
+    mname = metadataMap[mid]
+    #print mname
+    new_mid = rawDataMap[mname]
+    txt[0] = new_mid
+   
+    #evenId, timeStamp will be as it is
+    #replace pageID
+
+    return txt 
+
+
+def processMethodExit(txt):
+    #replace methodID
+    mid = txt[0] 
+    mname = metadataMap[mid]
+    new_mid = rawDataMap[mname]
+    txt[0] = new_mid
+   
+    #evenId, timeStamp will be as it is
+    #replace pageID
+
+    return txt 
+    
+
+def main():   
+    flowPathData = generateFlowPathList(sys.argv[1], sys.argv[2], sys.argv[3])
+    if not flowPathData or len(flowPathData) == 1:
+	#print "Invalid Sequence Blob"
+	sys.exit(255)
+
+    i = 0
+    newBlob = []
+
+    while(i < len(flowPathData) and ((i + 1 ) != len(flowPathData))):
+	if flowPathData[i + 1] == '0':
+	    txt1 = processMethodEntry(flowPathData[i: i + 4])
+	    newBlob.append(txt1)    
+	    i += 4 
+	    continue
+	elif flowPathData[i + 1] == '1':
+	    txt2 = processMethodExit(flowPathData[i: i + 6])
+	    newBlob.append(txt2)
+	    i += 6
+	    continue
+	else:
+	    i += 1
+
+    #print '_'.join(str(v) for v in newBlob)
+
+if __name__ == '__main__':
+    main()
